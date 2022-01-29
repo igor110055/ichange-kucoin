@@ -7,6 +7,8 @@ const morgan = require("morgan");
 const mongoose = require("mongoose");
 const redis = require("redis");
 const kucoin = require("kucoin-node-api");
+// MODELS
+const Commision = require("./src/models/commission");
 // config
 const app = express();
 dotenv.config({
@@ -48,9 +50,23 @@ class application {
     // redis connection
     client.connect();
     client.on("connect", () => console.log("Redis Client Connected"));
-    
+
     kucoin.init(config.kucoin);
     global.kucoin = kucoin;
+    // find the commission and add the defult commission
+    const commision = await Commision.find({});
+    if (commision.length == 0) {
+      const addCommission = new Commision({
+        percent: 1,
+      });
+      addCommission.save((err, data) => {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log("commission added");
+        }
+      });
+    }
   }
 
   route() {
