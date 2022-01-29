@@ -1,0 +1,36 @@
+{
+  "name": "ichange",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vchangeexchange/Ichange.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vchangeexchange/Ichange/issues"
+  },
+  "homepage": "https://github.com/Vchangeexchange/Ichange#readme",
+  "dependencies": {
+    "auto-bind": "^4.0.0",
+    "axios": "^0.24.0",
+    "bcrypt": "^5.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "express-validator": "^6.13.0",
+    "http-errors": "^1.8.1",
+    "jsonwebtoken": "^8.5.1",
+    "kucoin-node-api": "^2.1.4",
+    "mongoose": "^6.1.0",
+    "morgan": "^1.10.0",
+    "redis": "^4.0.0",
+    "uuid": "^8.3.2"
+  }
+}
