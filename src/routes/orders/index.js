@@ -13,6 +13,6 @@ router.get(
   validation.fildesValidate,
   ordersController.estimate
 );
-
-router.post("/trade/:from/:to/:amount", ordersController.tradeTest);
+router.post("/add/trade/", ordersController.addTrade);
+router.post("/trade/:from/:to/:amount/:transationId", ordersController.trade);
 module.exports = router;

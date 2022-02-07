@@ -36,6 +36,8 @@ class application {
   }
 
   async configuration() {
+    // use the public folder
+    app.use("/public", express.static("public"));
     // json
     app.use(express.json());
     // cors
@@ -67,6 +69,7 @@ class application {
         }
       });
     }
+
   }
 
   route() {

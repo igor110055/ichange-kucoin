@@ -1,5 +1,7 @@
 const httpErrors = require("http-errors");
 const axios = require("axios");
+const path = require("path");
+const fs = require("fs");
 // UTILS
 const redisRequester = require("../../../utils/redisRequester");
 const queryObjectGenerator = require("../../../utils/queryObjectGenerator");
@@ -10,7 +12,24 @@ class currenciesController {
       req.query
     );
     let data;
-    const findInRedis = await redisRequester.get("currencies");
+    let findInRedis = await redisRequester.get("currencies");
+    const logoNames = fs.readdirSync(
+      path.resolve("./public/images/CryptoLogo")
+    );
+    findInRedis = JSON.parse(findInRedis);
+    findInRedis.data = findInRedis.data.map((crypto) => {
+      const cryptoLogoIndex = logoNames.indexOf(crypto.currency + ".png");
+      if (cryptoLogoIndex != -1) {
+        crypto["logo"] =
+          req.hostname == "localhost"
+            ? `http://localhost:3000/public/images/CryptoLogo/${crypto.currency}.png`
+            : `http://51.210.225.161:3000/public/images/CryptoLogo/${crypto.currency}.png`;
+      } else {
+        crypto["logo"] = null;
+      }
+      return crypto;
+    });
+    findInRedis = JSON.stringify(findInRedis);
     if (findInRedis != null) {
       data = JSON.parse(findInRedis);
     } else {
@@ -21,6 +40,7 @@ class currenciesController {
         60 * 60 * 60
       );
     }
+    // return res.json(data);
     const result = [];
     data.data.forEach((currencie) => {
       if (Object.keys(querys).length == 0) {
@@ -49,7 +69,9 @@ class currenciesController {
   async fetchSingleAvailable(req, res, next) {
     let { currency } = req.params;
     currency = currency.toUpperCase();
-    const request = await axios.get(`${process.env.KUCOIN_BASE_URL}/api/v2/currencies/${currency}`);
+    const request = await axios.get(
+      `${process.env.KUCOIN_BASE_URL}/api/v2/currencies/${currency}`
+    );
     if (request.data.code !== "200000") {
       return next(httpErrors(404, "چنین ارزی در سامانه موجود نمیباشد"));
     }

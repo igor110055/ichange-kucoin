@@ -6,7 +6,7 @@ const auth = require("./auth/index");
 const deposit = require("./deposit/index");
 const orders = require("./orders/index");
 const admin = require("./admin/index");
-
+const accounts = require("./accounts/index");
 // MIDDLEWARES
 const hasRole = require("../http/middlewares/hasRole");
 const hasToken = require("../http/middlewares/hasToken");
@@ -15,5 +15,6 @@ router.use("/currencies", currencies);
 router.use("/auth", auth);
 router.use("/deposit", deposit);
 router.use("/orders", orders);
-router.use("/admin",hasToken , hasRole(["admin"]), admin);
+router.use("/accounts", accounts);
+router.use("/admin", hasToken, hasRole(["admin"]), admin);
 module.exports = router;

@@ -12,4 +12,6 @@ router.post(
   "/create/address/:currency",
   depositController.createDepositAddress
 );
+
+router.get('/check/:transatctionId/:currency' , depositController.checkDeposit)
 module.exports = router;
