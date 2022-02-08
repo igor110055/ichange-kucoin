@@ -5,8 +5,11 @@ const { v4: uuid } = require("uuid");
 const estimateCrypto = require("../../../utils/estimate");
 const redisRequester = require("../../../utils/redisRequester");
 const chanins = require("../../../utils/chains");
+const percentor = require("../../../utils/math/percentor");
 // MODELS
 const Trade = require("../../../models/trade");
+const Comission = require("../../../models/commission");
+const { default: axios } = require("axios");
 class ordersController {
   constructor() {
     autoBind(this);
@@ -88,13 +91,6 @@ class ordersController {
       }
     });
   }
-  async trade(req, res, next) {
-    const { transationId, from, to } = req.params;
-    const transatcionValidation = await this.walletTxId(transationId, next);
-    if (transatcionValidation.length == 0) {
-      return next(httpErrors(400, "ایدی تراکنش ارسال شده معتبر نمی باشد"));
-    }
-  }
   async walletTxId(id, next) {
     const depostiList = await kucoin.getDepositList();
     if (depostiList.code !== "200000") {
@@ -105,6 +101,124 @@ class ordersController {
       return deposit.walletTxId !== null && deposit.walletTxId == id;
     });
     return haveTranstactionId;
+  }
+  async trade(req, res, next) {
+    let { transationId, to, tradeId } = req.params;
+    to = to.toUpperCase();
+    const transatcionValidation = await this.walletTxId(transationId, next);
+    if (transatcionValidation.length == 0) {
+      return next(httpErrors(400, "ایدی تراکنش ارسال شده معتبر نمی باشد"));
+    }
+    const findTrade = await Trade.findById(tradeId);
+    if (!findTrade) {
+      return next(httpErrors(404, "تریدی با شناسه ی ارسال شده پیدا نشد"));
+    }
+    const from = transatcionValidation[0].currency;
+    const amount = transatcionValidation[0].amount;
+    const symbols = from + "-" + to;
+    let fetchFromNetwork = await axios.get(
+      `http://localhost:3000/api/v1/deposit/address/${from}`
+    );
+    fetchFromNetwork = fetchFromNetwork.data.data.filter((chain) => {
+      return chain.address == transatcionValidation[0].address;
+    });
+    if (fetchFromNetwork.length == 0) {
+      return next(httpErrors(404, "شبکه ی ارز مبدا پیدا نشد"));
+    }
+    // update the trade
+    const updateTrade = await Trade.findByIdAndUpdate(findTrade.id, {
+      $set: {
+        status: "deposited",
+        from,
+        fromNetwork: fetchFromNetwork[0].chain,
+        deposit: true,
+      },
+    });
+    const chaninsData = await chanins(to, findTrade.toNetwork.toUpperCase());
+    if (chaninsData == undefined) {
+      return next(httpErrors(404, "شبکه ی ارسال شده یافت نشد"));
+    }
+    console.log(from, to);
+    const estimate = await estimateCrypto(
+      from,
+      to,
+      amount,
+      symbols,
+      chaninsData,
+      next
+    );
+    if (estimate.main.crypto) {
+      return res.json("dsdasd322");
+    } else {
+      const trade = await this.tradeOneSecend(
+        from,
+        to,
+        estimate,
+        amount,
+        tradeId
+      );
+    }
+  }
+  async tradeOneSecend(from, to, estimate, amount, tradeId, next) {
+    const transferParamsToTrade = {
+      clientOid: tradeId + "transfer",
+      currency: from,
+      from: "main",
+      to: "trade",
+      amount: percentor(amount, commissionPercent.percent || 1),
+    };
+    const innerTransferToTrade = await kucoin.innerTransfer(
+      transferParamsToTrade
+    );
+    console.log("transfered");
+    const commissionPercent = await Comission.findOne({});
+    const params = {
+      clientOid: tradeId,
+      side: "sell",
+      symbol: `${from}-${to}`,
+      type: "limit",
+      price: estimate.priceWithOutWithdrawFee,
+      size: percentor(amount, commissionPercent.percent || 1),
+      timeInForce: "FOK",
+    };
+    const trade = await kucoin.placeOrder(params);
+    console.log("traded");
+    const transferParamsToMain = {
+      clientOid: tradeId + "transfer",
+      currency: to,
+      from: "trade",
+      to: "main",
+      amount: percentor(amount, commissionPercent.percent || 1),
+    };
+    const innerTransferToMain = await kucoin.innerTransfer(
+      transferParamsToMain
+    );
+    console.log("trasfred to main for withdraw");
+    return trade;
+  }
+  async tradeTwoSecend(from, to, estimate, amount, tradeId, next) {
+    const commissionPercent = await Comission.findOne({});
+    const sellParams = {
+      clientOid: tradeId,
+      side: "sell",
+      symbol: `${from}-${estimate.main.crypto}`,
+      type: "limit",
+      price: estimate.priceWithWithdrawFee,
+      size: percentor(amount, commissionPercent.percent || 1),
+      timeInForce: "FOK",
+    };
+    const sellTrade = await kucoin.placeOrder(sellParams);
+    const buyParams = {
+      clientOid: tradeId,
+      side: "buy",
+      symbol: `${estimate.main.crypto}-${to}`,
+      type: "limit",
+      price: estimate.priceWithOutWithdrawFee,
+      size: percentor(amount, commissionPercent.percent || 1),
+      timeInForce: "FOK",
+    };
+
+    const buyTraide = await kucoin.placeOrder();
   }
 }
 

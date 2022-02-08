@@ -39,7 +39,7 @@ class depositController {
     });
   }
   async checkDeposit(req, res, next) {
-    const { transatctionId , currency } = req.params;
+    const { transatctionId, currency, tradeId } = req.params;
     const depostiList = await kucoin.getDepositList();
     if (depostiList.code !== "200000") {
       return next(httpErrors(400, "درخواست با شکست مواجه شد"));
@@ -47,7 +47,9 @@ class depositController {
     const depostiListValue = depostiList.data.items;
     const haveTranstactionId = depostiListValue.filter((deposit) => {
       return (
-        deposit.walletTxId !== null && deposit.walletTxId == transatctionId && deposit.currency == currency.toUpperCase()
+        deposit.walletTxId !== null &&
+        deposit.walletTxId == transatctionId &&
+        deposit.currency == currency.toUpperCase()
       );
     });
     if (haveTranstactionId.length == 0) {
@@ -56,6 +58,13 @@ class depositController {
           400,
           "ایدی شناسه ی ارسال شده صحیح نمی باشد یا دپوزیت انجام نشده"
         )
+      );
+    }
+    // find trade
+    const findTrade = await Trade.findById(tradeId);
+    if (!findTrade) {
+      return next(
+        httpErrors(404, "شناسه ی ترید ارسال شده در سامانه موجود نمی باشد")
       );
     }
     return res.json({

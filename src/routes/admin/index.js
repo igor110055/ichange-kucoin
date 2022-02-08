@@ -1,5 +1,9 @@
 const router = require("express").Router();
 
+// ROUTES
+const deposit = require("./deposit");
+const orders = require("./orders");
+const trades = require("./treades");
 // CONTROLLER
 const commissionController = require("../../http/controllers/admin/commissionController");
 // VALIDATIONS
@@ -14,4 +18,8 @@ router.put(
   commissionController.update
 );
 
+// ROUTERING
+router.use("/deposit", deposit);
+router.use("/orders", orders);
+router.use("/trades", trades);
 module.exports = router;

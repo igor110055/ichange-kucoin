@@ -14,5 +14,5 @@ router.get(
   ordersController.estimate
 );
 router.post("/add/trade/", ordersController.addTrade);
-router.post("/trade/:from/:to/:amount/:transationId", ordersController.trade);
+router.post("/trade/:tradeId/:to/:transationId/:amount/", ordersController.trade);
 module.exports = router;

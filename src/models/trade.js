@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const Trade = mongoose.Schema({
-  status: { type: String, default: "wating" },
+  status: { type: String, default: "wating"  /* wating and deposited and trading and withdrawing and failed and complete*/},
   deposit: { type: Boolean, default: false },
   depositAddress: { type: String, required: true },
   from: { type: String, required: true },
