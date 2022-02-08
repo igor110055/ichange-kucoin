@@ -8,7 +8,7 @@ const queryObjectGenerator = require("../../../utils/queryObjectGenerator");
 class currenciesController {
   async fetchAllAvailable(req, res, next) {
     const querys = queryObjectGenerator(
-      ["isDepositEnabled", "isWithdrawEnabled"],
+      ["isDepositEnabled", "isWithdrawEnabled", "logo"],
       req.query
     );
     let data;
@@ -18,14 +18,14 @@ class currenciesController {
     );
     findInRedis = JSON.parse(findInRedis);
     findInRedis.data = findInRedis.data.map((crypto) => {
-      const cryptoLogoIndex = logoNames.indexOf(crypto.currency + ".png");
+      const cryptoLogoIndex = logoNames.indexOf(crypto.name + ".png");
       if (cryptoLogoIndex != -1) {
         crypto["logo"] =
           req.hostname == "localhost"
-            ? `http://localhost:3000/public/images/CryptoLogo/${crypto.currency}.png`
-            : `http://51.210.225.161:3000/public/images/CryptoLogo/${crypto.currency}.png`;
+            ? `http://localhost:3000/public/images/CryptoLogo/${crypto.name}.png`
+            : `http://51.210.225.161:3000/public/images/CryptoLogo/${crypto.name}.png`;
       } else {
-        crypto["logo"] = null;
+        crypto["logo"] = false;
       }
       return crypto;
     });

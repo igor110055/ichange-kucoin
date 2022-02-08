@@ -8,7 +8,7 @@ const orderValidator = require("../../http/validations/orders");
 // MIDDLEWARES
 
 router.get(
-  "/estimate/:from/:to/:amount",
+  "/estimate/:from/:to/:toNetwork/:amount",
   orderValidator.estimate(),
   validation.fildesValidate,
   ordersController.estimate

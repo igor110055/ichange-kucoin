@@ -1,8 +1,9 @@
 const httpErrors = require("http-errors");
 const comission = require("../models/commission");
+const crypto = require("crypto");
 // UTILS
 const percentCahnge = require("../utils/math/percentor");
-module.exports = async (from, to, amount, symbols, next) => {
+module.exports = async (from, to, amount, symbols, chaninsData, next) => {
   const comissionPrecent = await comission.findOne({});
   let result;
   const bestPrice = [];
@@ -18,9 +19,17 @@ module.exports = async (from, to, amount, symbols, next) => {
   if (findSymbolTikcer.length != 0) {
     result = {
       main: false,
-      price:
+      withdrawalMinSize: chaninsData.withdrawalMinSize,
+      withdrawalMinFee: chaninsData.withdrawalMinFee,
+      exchangePercent: comissionPrecent.percent,
+      basePrice: findSymbolTikcer[0].last,
+      priceWithOutWithdrawFee:
         percentCahnge(findSymbolTikcer[0].last, comissionPrecent.percent) *
         amount,
+      priceWithWithdrawFee:
+        percentCahnge(findSymbolTikcer[0].last, comissionPrecent.percent) *
+          amount -
+        chaninsData.withdrawalMinFee,
     };
     return result;
   }
@@ -31,11 +40,22 @@ module.exports = async (from, to, amount, symbols, next) => {
   if (reverseSymbolTicker.length != 0) {
     return {
       main: false,
-      price:
+      withdrawalMinSize: chaninsData.withdrawalMinSize,
+      withdrawalMinFee: chaninsData.withdrawalMinFee,
+      exchangePercent: comissionPrecent.percent,
+      basePrice: 1 / reverseSymbolTicker[0].last,
+      priceWithOutWithdrawFee:
         percentCahnge(
           1 / reverseSymbolTicker[0].last,
           comissionPrecent.percent
         ) * amount,
+      priceWithWithdrawFee:
+        percentCahnge(
+          1 / reverseSymbolTicker[0].last,
+          comissionPrecent.percent
+        ) *
+          amount -
+        chaninsData.withdrawalMinFee,
     };
   }
   const fromCoinConvert = [];
@@ -99,6 +119,14 @@ module.exports = async (from, to, amount, symbols, next) => {
     main: {
       crypto: price.crypto,
     },
-    price: percentCahnge(price.value, comissionPrecent.percent) * amount,
+    withdrawalMinSize: chaninsData.withdrawalMinSize,
+    withdrawalMinFee: chaninsData.withdrawalMinFee,
+    exchangePercent: comissionPrecent.percent,
+    basePrice: price.value,
+    priceWithOutWithdrawFee:
+      percentCahnge(price.value, comissionPrecent.percent) * amount,
+    priceWithWithdrawFee:
+      percentCahnge(price.value, comissionPrecent.percent) * amount -
+      chaninsData.withdrawalMinFee,
   };
 };

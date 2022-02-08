@@ -4,6 +4,7 @@ const { v4: uuid } = require("uuid");
 // UTILS
 const estimateCrypto = require("../../../utils/estimate");
 const redisRequester = require("../../../utils/redisRequester");
+const chanins = require("../../../utils/chains");
 // MODELS
 const Trade = require("../../../models/trade");
 class ordersController {
@@ -11,7 +12,7 @@ class ordersController {
     autoBind(this);
   }
   async estimate(req, res, next) {
-    let { from, to, amount } = req.params;
+    let { from, to, amount, toNetwork } = req.params;
     from = from.toUpperCase();
     to = to.toUpperCase();
     const symbols = from + "-" + to;
@@ -33,7 +34,19 @@ class ordersController {
     if (fromAndToCrypto.length != 2) {
       return next(httpErrors(404, "ارز های انتخاب شده در سامانه موجود نیست"));
     }
-    const result = await estimateCrypto(from, to, amount, symbols, next);
+    const chaninsData = await chanins(to, toNetwork.toUpperCase());
+    if (chaninsData == undefined) {
+      return next(httpErrors(404, "شبکه ی ارسال شده یافت نشد"));
+    }
+    // const cryptoNetworks = redisRequester.get('')
+    const result = await estimateCrypto(
+      from,
+      to,
+      amount,
+      symbols,
+      chaninsData,
+      next
+    );
     return res.json({
       status: true,
       statusCode: 200,
