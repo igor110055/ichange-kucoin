@@ -7,7 +7,7 @@ module.exports = async (to , toNetwork) => {
   );
   const result = {};
   toCryptoDetail.data.data.chains.forEach((net) => {
-    result[net.chainName] = net;
+    result[net.chainName.toUpperCase()] = net;
   });
   return result[toNetwork];
 };
