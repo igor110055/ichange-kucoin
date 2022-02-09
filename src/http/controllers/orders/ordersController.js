@@ -138,7 +138,6 @@ class ordersController {
     if (chaninsData == undefined) {
       return next(httpErrors(404, "شبکه ی ارسال شده یافت نشد"));
     }
-    console.log(from, to);
     const estimate = await estimateCrypto(
       from,
       to,
@@ -155,11 +154,14 @@ class ordersController {
         to,
         estimate,
         amount,
-        tradeId
+        tradeId,
+        next
       );
+      return res.json(trade);
     }
   }
   async tradeOneSecend(from, to, estimate, amount, tradeId, next) {
+    const commissionPercent = await Comission.findOne({});
     const transferParamsToTrade = {
       clientOid: tradeId + "transfer",
       currency: from,
@@ -170,19 +172,25 @@ class ordersController {
     const innerTransferToTrade = await kucoin.innerTransfer(
       transferParamsToTrade
     );
-    console.log("transfered");
-    const commissionPercent = await Comission.findOne({});
+    if (innerTransferToTrade.code == "230003") {
+      return next(httpErrors(400, "موجودی کافی نیست"));
+    }
+    if (innerTransferToTrade.code != "200000") {
+      return next(httpErrors(400, "درخواست با موفقیت انجام نشد"));
+    }
     const params = {
       clientOid: tradeId,
       side: "sell",
       symbol: `${from}-${to}`,
       type: "limit",
-      price: estimate.priceWithOutWithdrawFee,
+      price: estimate.basePrice,
       size: percentor(amount, commissionPercent.percent || 1),
       timeInForce: "FOK",
     };
     const trade = await kucoin.placeOrder(params);
-    console.log("traded");
+    if (trade.code != "200000") {
+      return next(httpErrors(400, "درخواست با موفقیت انجام نشد"));
+    }
     const transferParamsToMain = {
       clientOid: tradeId + "transfer",
       currency: to,
@@ -193,8 +201,15 @@ class ordersController {
     const innerTransferToMain = await kucoin.innerTransfer(
       transferParamsToMain
     );
-    console.log("trasfred to main for withdraw");
-    return trade;
+    if (innerTransferToMain.code != "200000") {
+      return next(httpErrors(400, "درخواست با موفقیت انجام نشد"));
+    }
+    return {
+      status: true,
+      statusCode: 200,
+      message: "ترید با موفقیت انجام شد",
+      // data: trade.data,
+    };
   }
   async tradeTwoSecend(from, to, estimate, amount, tradeId, next) {
     const commissionPercent = await Comission.findOne({});
