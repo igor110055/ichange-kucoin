@@ -2,7 +2,7 @@ const axios = require("axios");
 // UTILS
 
 module.exports = async (to , toNetwork) => {
-  let toCryptoDetail = await axios.get(
+  const toCryptoDetail = await axios.get(
     `${process.env.KUCOIN_BASE_URL}/api/v2/currencies/${to}`
   );
   const result = {};

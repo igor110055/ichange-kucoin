@@ -1,6 +1,5 @@
 const httpErrors = require("http-errors");
 const comission = require("../models/commission");
-const crypto = require("crypto");
 // UTILS
 const percentCahnge = require("../utils/math/percentor");
 module.exports = async (from, to, amount, symbols, chaninsData, next) => {
@@ -115,6 +114,12 @@ module.exports = async (from, to, amount, symbols, chaninsData, next) => {
       price.value = bestPrice[crypto];
     }
   });
+  const fromToMainPrice = allTikcers.data.ticker.filter((symbol)=>{
+    return symbol.symbol == `${from}-${price.crypto}`
+  })
+  const ToMainPrice = allTikcers.data.ticker.filter((symbol)=>{
+    return symbol.symbol == `${to}-${price.crypto}`
+  })
   return {
     main: {
       crypto: price.crypto,
@@ -123,6 +128,8 @@ module.exports = async (from, to, amount, symbols, chaninsData, next) => {
     withdrawalMinFee: chaninsData.withdrawalMinFee,
     exchangePercent: comissionPrecent.percent,
     basePrice: price.value,
+    fromToMainPrice : fromToMainPrice[0].sell,
+    ToMainPrice : ToMainPrice[0].buy,
     priceWithOutWithdrawFee:
       percentCahnge(price.value, comissionPrecent.percent) * amount,
     priceWithWithdrawFee:
