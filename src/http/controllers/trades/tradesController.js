@@ -11,6 +11,17 @@ class tradesController {
             data : fetchAllTrades
         })
     }
+
+    async fetchSingleTrades(req,res,next){
+       const {id} = req.params;
+        const fetchSingleTrades = await Trade.findById(id);
+        return res.json({
+            status : true,
+            statusCode : 200,
+            message : "دریافت  ترید",
+            data : fetchSingleTrades
+        })
+    }
 }
 
 module.exports = new tradesController();

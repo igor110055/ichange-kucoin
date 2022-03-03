@@ -1,6 +1,7 @@
 const autoBind = require("auto-bind");
 const httpErrors = require("http-errors");
 const { v4: uuid } = require("uuid");
+const axios = require('axios')
 // UTILS
 const estimateCrypto = require("../../../utils/estimate");
 const redisRequester = require("../../../utils/redisRequester");
@@ -113,14 +114,15 @@ class ordersController {
     if (!findTrade) {
       return next(httpErrors(404, "تریدی با شناسه ی ارسال شده پیدا نشد"));
     }
-    const from = "ALGO";
+    const from = findTrade.from;
     const amount = 9;
-
     const symbols = from + "-" + to;
     let fetchFromNetwork;
     try {
+
       fetchFromNetwork = await axios.get(
         `http://localhost:3000/api/v1/deposit/address/${from}`
+
       );
     } catch (error) {
       res.statusCode = error.response.data.error.status;

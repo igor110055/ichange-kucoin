@@ -5,10 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fd24bd1e-c4a5-4282-9b78-765efeb47349" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/utils/math/removeDecimal.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/http/passport/passport-google.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http/controllers/admin/tradesController.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/http/controllers/trades/tradesController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/http/controllers/orders/ordersController.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/http/controllers/orders/ordersController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/users.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/users.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/admin/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/admin/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/admin/treades.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/trades/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/chains.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/chains.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/estimate.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/estimate.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,12 +48,22 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/http/passport" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="vue.rearranger.settings.migration" value="true" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="F:\project\arash\ichange-kucoin\src\http\passport" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="F:\project\arash\ichange-kucoin\src\http\controllers\trades" />
+      <recent name="F:\project\arash\ichange-kucoin\src\routes\treades" />
+    </key>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -61,6 +76,7 @@
       <workItem from="1644765343302" duration="23000" />
       <workItem from="1644765390449" duration="444000" />
       <workItem from="1644765970524" duration="7050000" />
+      <workItem from="1646301291597" duration="8974000" />
     </task>
     <servers />
   </component>
