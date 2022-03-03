@@ -114,8 +114,8 @@ class ordersController {
     if (!findTrade) {
       return next(httpErrors(404, "تریدی با شناسه ی ارسال شده پیدا نشد"));
     }
-    const from = findTrade.from;
-    const amount = 9;
+    const from = transatcionValidation[0].currency;
+    const amount = transatcionValidation[0].amount;
     const symbols = from + "-" + to;
     let fetchFromNetwork;
     try {
