@@ -11,13 +11,30 @@ const User = mongooose.Schema({
   },
   phoneNumber: {
     type: String,
-    default: null,
+    required : true
   },
   phoneNumberVerify: {
     type: Boolean,
     default: false,
   },
   role: { type: String, default: "user" },
+  // users information
+  firstName: {
+    type: String,
+    default: null,
+  },
+  lastName: {
+    type: String,
+    default: null,
+  },
+  birthDay: {
+    type: Number,
+    default: null,
+  },
+  nationalIdNumber: {
+    type: Number,
+    default: null,
+  },
 });
 
 User.methods.comparePassword = async (hashPassword, password) => {
