@@ -9,6 +9,5 @@ module.exports = async (receptor, param1, param2, templateName) => {
     data,
     headers: { apikey: process.env.GHASEDAK_API_KEY },
   });
-  console.log(request);
-  return request.data.result == "success" ? true : false
+  return request.data.result == "success"
 };

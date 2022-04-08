@@ -41,6 +41,7 @@ class loginController {
     );
     if (!findUser.phoneNumberVerify) {
       const sms = await this.createPhoneNumberVerification(findUser);
+      console.log(sms);
       if (!sms) {
         return next(
           httpErrors(500, "مشکل در ارسال پیامک کاربر لطفا دوباره وارد شوید")
@@ -64,15 +65,15 @@ class loginController {
     });
     const smsSending = await phoneNumberVerify(
       user.phoneNumber,
-      "کوکین",
-      code,
+     "soex",
+      code(),
       process.env.PHONE_NUMBER_VERIFY_TEMPLATE_NAME
     );
     if (!smsSending) {
       return false;
     }
     const addCode = new phoneNumberCodes({
-      code,
+      code : code(),
       userId: user.id,
       used: false,
     });
@@ -80,10 +81,9 @@ class loginController {
       if (err) {
         console.log(err);
         return false;
-      } else if (data) {
-        return true;
       }
     });
+    return true
   }
 }
 

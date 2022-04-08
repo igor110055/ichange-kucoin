@@ -9,9 +9,16 @@ const ChangeEmail = mongooose.Schema({
     type: String,
     required: true,
   },
-  user: {
+  userId: {
     type: mongooose.Schema.Types.ObjectId,
     ref: "users",
+  },
+  linkId : {
+    type : String , required : true,
+  },
+  code : {
+    type : Number ,
+    required : true
   },
   used: {
     type: Boolean,

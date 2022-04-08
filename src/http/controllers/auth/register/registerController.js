@@ -62,18 +62,18 @@ class registerController {
       max: 99999,
       integer: true,
     });
-    console.log(code);
+    const useCode = code();
     const smsSending = await phoneNumberVerify(
       user.phoneNumber,
-      "ثُ اِکس",
-      code(),
+      "soex",
+      useCode,
       process.env.PHONE_NUMBER_VERIFY_TEMPLATE_NAME
     );
     if (!smsSending) {
       return false;
     }
     const addCode = new phoneNumberCodes({
-      code : code(),
+      code : useCode,
       userId: user.id,
       used: false,
     });
@@ -81,10 +81,9 @@ class registerController {
       if (err) {
         console.log(err);
         return false;
-      }else if(data){
-        return true;
       }
     });
+    return true
   }
 }
 
