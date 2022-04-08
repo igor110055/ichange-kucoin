@@ -62,17 +62,18 @@ class registerController {
       max: 99999,
       integer: true,
     });
+    console.log(code);
     const smsSending = await phoneNumberVerify(
       user.phoneNumber,
-      "کوکین",
-      code,
+      "ثُ اِکس",
+      code(),
       process.env.PHONE_NUMBER_VERIFY_TEMPLATE_NAME
     );
     if (!smsSending) {
       return false;
     }
     const addCode = new phoneNumberCodes({
-      code,
+      code : code(),
       userId: user.id,
       used: false,
     });
