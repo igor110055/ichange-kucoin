@@ -6,7 +6,7 @@ const Users = require("../../../../models/users");
 const phoneNumberCodes = require("../../../../models/phoneNumberCodes");
 
 // UTILS
-const phoneNumberVerify = require("../../../../utils/phoneNumberVerify");
+const phoneNumberVerify = require("../../../../utils/smsSender");
 const autoBind = require("auto-bind");
 
 class loginController {
