@@ -5,7 +5,7 @@ const randomNumber = require("random-number");
 // MODESL
 const Users = require("../../../../models/users");
 const phoneNumberCodes = require("../../../../models/phoneNumberCodes");
-
+const Invitation = require("../../../../models/invitation");
 // UTILS
 const phoneNumberVerify = require("../../../../utils/smsSender");
 const autoBind = require("auto-bind");
@@ -15,7 +15,7 @@ class registerController {
   }
   async register(req, res, next) {
     const { phoneNumber, password } = req.body;
-
+    const { invitation } = req.query;
     const findUser = await Users.findOne({ phoneNumber });
     if (findUser) {
       return next(httpErrors(400, "چنین کاربری در سامانه موجوداست"));
@@ -47,6 +47,10 @@ class registerController {
             httpErrors(500, "مشکل در ثبت نام کاربر لطفا دوباره ثبت نام کنید")
           );
         }
+
+        if (invitation.length != 0) {
+          await this.invitationUser(invitation , data.id)
+        }
         return res.json({
           status: true,
           statusCode: 200,
@@ -73,7 +77,7 @@ class registerController {
       return false;
     }
     const addCode = new phoneNumberCodes({
-      code : useCode,
+      code: useCode,
       userId: user.id,
       used: false,
     });
@@ -83,7 +87,14 @@ class registerController {
         return false;
       }
     });
-    return true
+    return true;
+  }
+
+  async invitationUser(code, userId) {
+    const findInvationCode = await Invitation.findOneAndUpdate(
+      { referralCode: code },
+      { $push: { friendShared: userId } }
+    );
   }
 }
 
