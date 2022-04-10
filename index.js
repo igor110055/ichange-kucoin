@@ -1,5 +1,8 @@
 const http = require("http");
 const path = require("path");
+const cluster = require("cluster");
+const os = require("os");
+
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -20,18 +23,39 @@ const config = require("./config/index");
 const errorHandler = require("./src/http/middlewares/errorHandler");
 // ROUTE
 const route = require("./src/routes/index");
+const autoBind = require("auto-bind");
 global.client = redis.createClient();
 
 class application {
   constructor() {
+    autoBind(this);
     this.server();
     this.configuration();
     this.route();
   }
   server() {
-    const server = http.createServer(app);
-    server.listen(process.env.PORT || 8000, () => {
-      console.log(`server run on Port ${process.env.PORT || 8000}`);
+    if (cluster.isMaster) {
+      this.setupWorkerProcess();
+    } else {
+      const server = http.createServer(app);
+      server.listen(process.env.PORT || 8000, () => {
+        console.log(`server run on Port ${process.env.PORT || 8000}`);
+      });
+    }
+  }
+
+  setupWorkerProcess() {
+    const cpuCount = os.cpus().length;
+    for (let index = 0; index < cpuCount; index++) {
+      cluster.fork();
+    }
+    cluster.on("exit", (worker, code, signal) => {
+      console.log(`worker ${worker.process.pid} died for Exit`);
+      cluster.fork();
+    });
+    cluster.on("error", (worker, code, signal) => {
+      console.log(`worker ${worker.process.pid} died for Error`);
+      cluster.fork();
     });
   }
 
@@ -69,7 +93,6 @@ class application {
         }
       });
     }
-
   }
 
   route() {

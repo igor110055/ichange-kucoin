@@ -20,5 +20,5 @@ router.use("/orders", orders);
 router.use("/accounts", accounts);
 router.use("/trades", trades);
 router.use("/dashboard", hasToken, dashboard);
-router.use("/admin", hasToken, hasRole(["admin"]), admin);
+router.use("/admin" , hasToken , hasRole(["admin"]), admin);
 module.exports = router;
