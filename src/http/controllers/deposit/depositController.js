@@ -1,6 +1,6 @@
 const httpErrors = require("http-errors");
 const Trade = require("../../../models/trade");
-
+const Deposit = require("../../../models/deposit");
 // UTILS
 const redisRequester = require("../../../utils/redisRequester");
 class depositController {
@@ -39,7 +39,14 @@ class depositController {
     });
   }
   async checkDeposit(req, res, next) {
-    const { transatctionId, currency, tradeId } = req.params;
+    const { transatctionId, currency, tradeId } = req.body;
+    const transatctionIdRealValue = (transatctionId) => {
+      if (transatctionId.includes("http")) {
+        const transatctionIdUrlContent = transatctionId.split("/");
+        return transatctionIdUrlContent[transatctionIdUrlContent.length - 1];
+      }
+      return transatctionId;
+    };
     const depostiList = await kucoin.getDepositList();
     if (depostiList.code !== "200000") {
       return next(httpErrors(400, "درخواست با شکست مواجه شد"));
@@ -48,7 +55,8 @@ class depositController {
     const haveTranstactionId = depostiListValue.filter((deposit) => {
       return (
         deposit.walletTxId !== null &&
-        deposit.walletTxId == transatctionId &&
+        deposit.walletTxId.slice(0, deposit.walletTxId.indexOf("@")) ==
+          transatctionIdRealValue(transatctionId) &&
         deposit.currency == currency.toUpperCase()
       );
     });
@@ -60,18 +68,30 @@ class depositController {
         )
       );
     }
-    // find trade
-    const findTrade = await Trade.findById(tradeId);
-    if (!findTrade) {
-      return next(
-        httpErrors(404, "شناسه ی ترید ارسال شده در سامانه موجود نمی باشد")
-      );
+    let result = null;
+    const findDeposit = await Deposit.findOne({
+      walletTxId: transatctionIdRealValue(transatctionId),
+    });
+    if (!findDeposit) {
+      const addDeposit = new Deposit({
+        ...haveTranstactionId[0],
+        walletTxId: transatctionIdRealValue(transatctionId),
+      });
+      addDeposit.save((err, data) => {
+        if (err) {
+          console.log(err);
+        }
+        result = data;
+      });
+    }else {
+      result = findDeposit
     }
+    
     return res.json({
       status: true,
       statusCode: 200,
       message: "دپوزیت انجام شده",
-      data: null,
+      data : result,
     });
   }
 }

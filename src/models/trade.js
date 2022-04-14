@@ -1,9 +1,15 @@
 const mongoose = require("mongoose");
 
 const Trade = mongoose.Schema({
-  status: { type: String, default: "wating"  /* wating and deposited and trading and withdrawing and failed and complete*/},
-  deposit: { type: Boolean, default: false },
-  depositAddress: { type: String, required: true },
+  status: {
+    type: String,
+    default:
+      "deposited" /*  deposited and trading and withdrawing and failed and complete*/,
+  },
+  depositId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "deposits",
+  },
   from: { type: String, required: true },
   to: {
     type: String,
@@ -14,10 +20,6 @@ const Trade = mongoose.Schema({
     required: true,
   },
   toNetwork: {
-    type: String,
-    required: true,
-  },
-  estimate: {
     type: String,
     required: true,
   },

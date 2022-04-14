@@ -43,7 +43,6 @@ class application {
       });
     }
   }
-
   setupWorkerProcess() {
     const cpuCount = os.cpus().length;
     for (let index = 0; index < cpuCount; index++) {
@@ -58,7 +57,6 @@ class application {
       cluster.fork();
     });
   }
-
   async configuration() {
     // use the public folder
     app.use("/public", express.static("public"));
@@ -94,7 +92,6 @@ class application {
       });
     }
   }
-
   route() {
     app.use("/api/v1", route);
     // error Handler

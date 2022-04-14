@@ -1,13 +1,13 @@
 const autoBind = require("auto-bind");
 const httpErrors = require("http-errors");
 const { v4: uuid } = require("uuid");
-const axios = require('axios')
+const axios = require("axios");
 // UTILS
 const estimateCrypto = require("../../../utils/estimate");
 const redisRequester = require("../../../utils/redisRequester");
 const chanins = require("../../../utils/chains");
 const percentor = require("../../../utils/math/percentor");
-const decimalRemover = require('../../../utils/math/removeDecimal')
+const decimalRemover = require("../../../utils/math/removeDecimal");
 // MODELS
 const Trade = require("../../../models/trade");
 const Comission = require("../../../models/commission");
@@ -59,25 +59,16 @@ class ordersController {
     });
   }
   async addTrade(req, res, next) {
-    const {
-      from,
-      to,
-      depositAddress,
-      fromNetwork,
-      toNetwork,
-      estimate,
-      withdrawAddress,
-    } = req.body;
+    const { from, to, depositId, fromNetwork, toNetwork, withdrawAddress } =
+      req.body;
     const addTeade = new Trade({
       from,
       to,
       fromNetwork,
       toNetwork,
-      estimate,
       withdrawAddress,
-      deposit: false,
-      depositAddress,
-      status: "wating",
+      depositId,
+      status: "deposited",
     });
     addTeade.save((err, data) => {
       if (err) {
@@ -92,65 +83,27 @@ class ordersController {
       }
     });
   }
-  async walletTxId(id, next) {
-    const depostiList = await kucoin.getDepositList();
-    if (depostiList.code !== "200000") {
-      return next(httpErrors(400, "درخواست با شکست مواجه شد"));
-    }
-    const depostiListValue = depostiList.data.items;
-    const haveTranstactionId = depostiListValue.filter((deposit) => {
-      return deposit.walletTxId !== null && deposit.walletTxId == id;
-    });
-    return haveTranstactionId;
-  }
+
   async trade(req, res, next) {
-    let { transationId, to, tradeId } = req.params;
+    let { to, tradeId } = req.body;
     to = to.toUpperCase();
-    const transatcionValidation = await this.walletTxId(transationId, next);
-    if (transatcionValidation.length == 0) {
-      return next(httpErrors(400, "ایدی تراکنش ارسال شده معتبر نمی باشد"));
-    }
-    const findTrade = await Trade.findById(tradeId);
+    const findTrade = await Trade.findById(tradeId).populate([
+      { path: "depositId" },
+    ]);
     if (!findTrade) {
       return next(httpErrors(404, "تریدی با شناسه ی ارسال شده پیدا نشد"));
     }
-    const from = transatcionValidation[0].currency;
-    const amount = transatcionValidation[0].amount;
+    const from = findTrade.depositId.currency;
+    const amount = findTrade.depositId.amount;
     const symbols = from + "-" + to;
-    let fetchFromNetwork;
-    try {
 
-      fetchFromNetwork = await axios.get(
-        `http://localhost:3000/api/v1/deposit/address/${from}`
-
-      );
-    } catch (error) {
-      res.statusCode = error.response.data.error.status;
-      return res.json({
-        status: false,
-        statusCode: error.response.data.error.status,
-        message: error.response.data.error.message,
-      });
-    }
-    fetchFromNetwork = fetchFromNetwork.data.data.filter((chain) => {
-      return chain.address == transatcionValidation[0].address;
-    });
-    if (fetchFromNetwork.length == 0) {
-      return next(httpErrors(404, "شبکه ی ارز مبدا پیدا نشد"));
-    }
     // update the trade
     const updateTrade = await Trade.findByIdAndUpdate(findTrade.id, {
       $set: {
-        status: "deposited",
+        status: "trading",
         from,
-        fromNetwork: `$fetchFromNetwork[0].chain}`,
-        deposit: true,
       },
     });
-    const chaninsData = await chanins(to, findTrade.toNetwork.toUpperCase());
-    if (chaninsData == undefined) {
-      return next(httpErrors(404, "شبکه ی ارسال شده یافت نشد"));
-    }
     const estimate = await estimateCrypto(
       from,
       to,
@@ -193,6 +146,7 @@ class ordersController {
     const innerTransferToTrade = await kucoin.innerTransfer(
       transferParamsToTrade
     );
+    console.log("transfer to trade", innerTransferToTrade);
     if (innerTransferToTrade.code == "230003") {
       return next(httpErrors(400, "موجودی کافی نیست"));
     }
@@ -200,20 +154,20 @@ class ordersController {
       return next(httpErrors(400, "درخواست با موفقیت انجام نشد"));
     }
     const params = {
-      clientOid: tradeId,
+      clientOid: tradeId + "Tardeing",
       side: "sell",
       symbol: `${from}-${to}`,
-      type: "limit",
+      type: "market",
       price: estimate.basePrice,
-      size: percentor(amount, commissionPercent.percent || 1),
-      timeInForce: "FOK",
+      size: await percentor(amount, commissionPercent.percent || 1),
     };
-
     const trade = await kucoin.placeOrder(params);
+    console.log("trading ", trade);
     if (trade.code != "200000") {
       return next(httpErrors(400, "درخواست با موفقیت انجام نشد"));
     }
     const order = await kucoin.getOrderById({ id: trade.data.orderId });
+    console.log("order", order);
     if (order.code != "200000") {
       return next(httpErrors(400, "عملیات با موفقیت انجام نشد"));
     }
@@ -227,9 +181,14 @@ class ordersController {
     const innerTransferToMain = await kucoin.innerTransfer(
       transferParamsToMain
     );
+    console.log("transfer to main", innerTransferToMain);
     if (innerTransferToMain.code != "200000") {
-      console.log(innerTransferToMain);
       return next(httpErrors(400, "درخواست با موفقیت انجام نشد"));
+    }
+    if(innerTransferToMain.msg == "repeated requests"){
+      await kucoin.innerTransfer(
+        transferParamsToMain
+      );
     }
     return res.json({
       status: true,
@@ -241,12 +200,12 @@ class ordersController {
   async tradeTwoSecend(from, to, estimate, amount, tradeId, next) {
     const commissionPercent = await Comission.findOne({});
     const symbolsKucoin = await kucoin.getSymbols();
-    const cryptoSymbolsFromToMain  = symbolsKucoin.data.filter((symbol) => {
-      return symbol.symbol == `${from}-${estimate.main.crypto}` ;
+    const cryptoSymbolsFromToMain = symbolsKucoin.data.filter((symbol) => {
+      return symbol.symbol == `${from}-${estimate.main.crypto}`;
     });
-    const cryptoSymbolsMainToTO = symbolsKucoin.data.filter((symbol)=>{
-      return  symbol.symbol == `${to}-${estimate.main.crypto}`
-    })
+    const cryptoSymbolsMainToTO = symbolsKucoin.data.filter((symbol) => {
+      return symbol.symbol == `${to}-${estimate.main.crypto}`;
+    });
     const transferParamsToTrade = {
       clientOid: tradeId + "transfer",
       currency: from,
@@ -272,15 +231,30 @@ class ordersController {
       timeInForce: "FOK",
     };
     const sellTrade = await kucoin.placeOrder(sellParams);
-    console.log(sellTrade)
+    console.log(sellTrade);
     if (sellTrade.code != "200000") {
-      return next(httpErrors(400, `ترید ${from + '=>' + estimate.main.crypto} با تایب فروش با موفقیت انجام نشد`));
+      return next(
+        httpErrors(
+          400,
+          `ترید ${
+            from + "=>" + estimate.main.crypto
+          } با تایب فروش با موفقیت انجام نشد`
+        )
+      );
     }
     const sellOrder = await kucoin.getOrderById({ id: sellTrade.data.orderId });
     if (sellOrder.code != "200000") {
-      return next(httpErrors(400, "عملیات دریافت وضعیت ترید مرحله ی فروش با موفقیت انجام نشد"));
+      return next(
+        httpErrors(
+          400,
+          "عملیات دریافت وضعیت ترید مرحله ی فروش با موفقیت انجام نشد"
+        )
+      );
     }
-    const buySize =  decimalRemover(sellOrder.data.dealFunds - sellOrder.data.fee , cryptoSymbolsFromToMain[0].quoteIncrement)
+    const buySize = decimalRemover(
+      sellOrder.data.dealFunds - sellOrder.data.fee,
+      cryptoSymbolsFromToMain[0].quoteIncrement
+    );
     const buyParams = {
       clientOid: tradeId,
       side: "buy",
@@ -291,22 +265,34 @@ class ordersController {
     };
     const buyTrade = await kucoin.placeOrder(buyParams);
     if (buyTrade.code != "200000") {
-      return next(httpErrors(400, `ترید ${to + '=>' + estimate.main.crypto} با تایپ خرید با موفقیت انجام نشد`));
+      return next(
+        httpErrors(
+          400,
+          `ترید ${
+            to + "=>" + estimate.main.crypto
+          } با تایپ خرید با موفقیت انجام نشد`
+        )
+      );
     }
-   const buyOrder = await kucoin.getOrderById({id : buyTrade.data.orderId});
+    const buyOrder = await kucoin.getOrderById({ id: buyTrade.data.orderId });
     if (buyOrder.code != "200000") {
-      return next(httpErrors(400, "عملیات دریافت وضعیت ترید مرحله ی خرید با موفقیت انجام نشد"));
+      return next(
+        httpErrors(
+          400,
+          "عملیات دریافت وضعیت ترید مرحله ی خرید با موفقیت انجام نشد"
+        )
+      );
     }
-   // transfer from trade account to main account
+    // transfer from trade account to main account
     const transferParamsToMain = {
       clientOid: tradeId + "transfer",
       currency: to,
       from: "trade",
       to: "main",
-      amount: percentor(buyTrade.data.sizeFunds)
+      amount: percentor(buyTrade.data.sizeFunds),
     };
     const innerTransferToMain = await kucoin.innerTransfer(
-        transferParamsToMain
+      transferParamsToMain
     );
     if (innerTransferToMain.code == "230003") {
       return next(httpErrors(400, "موجودی کافی نیست"));
@@ -314,12 +300,12 @@ class ordersController {
     if (innerTransferToMain.code != "200000") {
       return next(httpErrors(400, "جابجایی از اکانت با موفقیت انجام نشد"));
     }
-   return res.json({
-     status : true ,
-     statusCode : 200 ,
-     message : "ترید با موفقیت انجام شد",
-     data : buyTrade.data
-   })
+    return res.json({
+      status: true,
+      statusCode: 200,
+      message: "ترید با موفقیت انجام شد",
+      data: buyTrade.data,
+    });
   }
 }
 
