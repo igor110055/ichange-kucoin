@@ -104,6 +104,7 @@ class ordersController {
         from,
       },
     });
+    IO.emit("tradeStatus", "درحال مسیر یابی برای ترید");
     const estimate = await estimateCrypto(
       from,
       to,
@@ -112,6 +113,7 @@ class ordersController {
       findTrade.toNetwork.toUpperCase(),
       next
     );
+    IO.emit("tradeStatus", "درحال تبدیل دارایی");
     if (estimate.main.crypto) {
       const trade = await this.tradeTwoSecend(
         from,
@@ -125,6 +127,8 @@ class ordersController {
       const trade = await this.tradeOneSecend(
         from,
         to,
+        findTrade.toNetwork.toUpperCase(),
+        findTrade.withdrawAddress,
         estimate,
         amount,
         tradeId,
@@ -134,7 +138,17 @@ class ordersController {
       return trade;
     }
   }
-  async tradeOneSecend(from, to, estimate, amount, tradeId, res, next) {
+  async tradeOneSecend(
+    from,
+    to,
+    toNetwork,
+    withdrawAddress,
+    estimate,
+    amount,
+    tradeId,
+    res,
+    next
+  ) {
     const commissionPercent = await Comission.findOne({});
     const transferParamsToTrade = {
       clientOid: tradeId + "transfer",
@@ -185,11 +199,11 @@ class ordersController {
     if (innerTransferToMain.code != "200000") {
       return next(httpErrors(400, "درخواست با موفقیت انجام نشد"));
     }
-    if(innerTransferToMain.msg == "repeated requests"){
-      await kucoin.innerTransfer(
-        transferParamsToMain
-      );
+    if (innerTransferToMain.msg == "repeated requests") {
+      await kucoin.innerTransfer(transferParamsToMain);
     }
+    IO.emit("tradeStatus", "تبدیل با موفقیت انجام شد");
+    await this.withdrawaing(next, to, withdrawAddress, "");
     return res.json({
       status: true,
       statusCode: 200,
@@ -300,12 +314,30 @@ class ordersController {
     if (innerTransferToMain.code != "200000") {
       return next(httpErrors(400, "جابجایی از اکانت با موفقیت انجام نشد"));
     }
+    if (innerTransferToMain.msg == "repeated requests") {
+      await kucoin.innerTransfer(transferParamsToMain);
+    }
     return res.json({
       status: true,
       statusCode: 200,
       message: "ترید با موفقیت انجام شد",
       data: buyTrade.data,
     });
+  }
+
+  async withdrawaing(next, currency, address, amount, memo, chain) {
+    const params = {
+      currency,
+      address,
+      amount,
+      memo,
+      chain,
+    };
+    IO.emit("tradeStatus", "درحال ارسال دارایی");
+    const withdrawaing = await kucoin.applyForWithdrawal(params);
+    if (withdrawaing.code != "200000") {
+      return next(httpErrors(400, "در ارسال دارایی ها به مشکل بر خوردیم"));
+    }
   }
 }
 

@@ -1,7 +1,11 @@
-const http = require("http");
+const { createServer } = require("http");
 const path = require("path");
 const cluster = require("cluster");
 const os = require("os");
+const { Server } = require("socket.io");
+
+const { setupMaster, setupWorker } = require("@socket.io/sticky");
+const { createAdapter, setupPrimary } = require("@socket.io/cluster-adapter");
 
 const express = require("express");
 const cors = require("cors");
@@ -37,13 +41,32 @@ class application {
     if (cluster.isMaster) {
       this.setupWorkerProcess();
     } else {
-      const server = http.createServer(app);
-      server.listen(process.env.PORT || 8000, () => {
-        console.log(`server run on Port ${process.env.PORT || 8000}`);
+      const httpServer = createServer(app);
+      const io = new Server(httpServer);
+      global.IO = io;
+
+      // use the cluster adapter
+      io.adapter(createAdapter());
+
+      // setup connection with the primary process
+      setupWorker(io);
+      io.on("connection", (socket) => {
+        socket.emit('connected' , 'شما به سامانه وصل شدید');
+        console.log('seocket is connected');
       });
     }
   }
   setupWorkerProcess() {
+    const httpServer = createServer();
+    // setup sticky sessions
+    setupMaster(httpServer, {
+      loadBalancingMethod: "least-connection",
+    });
+    // setup connections between the workers
+    setupPrimary();
+    cluster.setupPrimary({
+      serialization: "advanced",
+    });
     const cpuCount = os.cpus().length;
     for (let index = 0; index < cpuCount; index++) {
       cluster.fork();
@@ -55,6 +78,10 @@ class application {
     cluster.on("error", (worker, code, signal) => {
       console.log(`worker ${worker.process.pid} died for Error`);
       cluster.fork();
+    });
+
+    httpServer.listen(process.env.PORT || 8000, () => {
+      console.log(`server run on Port ${process.env.PORT || 8000}`);
     });
   }
   async configuration() {

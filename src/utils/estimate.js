@@ -3,6 +3,9 @@ const comission = require("../models/commission");
 // UTILS
 const percentCahnge = require("../utils/math/percentor");
 module.exports = async (from, to, amount, symbols, chaninsData, next) => {
+  IO.emit('estimate' , 'در حال مسیر یابی ');
+ 
+
   const comissionPrecent = await comission.findOne({});
   let result;
   const bestPrice = [];
@@ -16,6 +19,7 @@ module.exports = async (from, to, amount, symbols, chaninsData, next) => {
     return tikcer.symbol == symbols;
   });
   if (findSymbolTikcer.length != 0) {
+    IO.emit('estimate' , 'مسیر یابی به اتمام رسید')
     result = {
       main: false,
       withdrawalMinSize: chaninsData.withdrawalMinSize,
@@ -37,6 +41,7 @@ module.exports = async (from, to, amount, symbols, chaninsData, next) => {
     return ticker.symbol == reverseSymbol;
   });
   if (reverseSymbolTicker.length != 0) {
+    IO.emit('estimate' , 'مسیر یابی به اتمام رسید')
     return {
       main: false,
       withdrawalMinSize: chaninsData.withdrawalMinSize,
@@ -120,6 +125,7 @@ module.exports = async (from, to, amount, symbols, chaninsData, next) => {
   const ToMainPrice = allTikcers.data.ticker.filter((symbol)=>{
     return symbol.symbol == `${to}-${price.crypto}`
   })
+  IO.emit('estimate' , 'مسیر یابی به اتمام رسید')
   return {
     main: {
       crypto: price.crypto,
